@@ -4,12 +4,14 @@ import { ClockSVG } from "../Icons/Clock"
 import { DeleteSVG } from "../Icons/Delete"
 import { DotsVerticalSVG } from "../Icons/DotsVerticalSVG"
 import { EditSVG } from "../Icons/Edit"
-import { useState, useRef, useEffect, useContext } from "react"
+import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { TrashSVG } from "../Icons/Trash"
-import { TaskContext } from "../../context/context"
+import { useTaskContext } from "../../context/context"
+import { Task } from "../HomePage/HomePage"
+import { useClickOutside } from "../../helperHooks/useClickOutside"
 
-const BootstrapDialog = styled(Dialog)(({ theme }) => ({
+export const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
         padding: theme.spacing(2),
     },
@@ -18,66 +20,73 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     },
 }));
 
+export const CancelButton = styled(Button)(({ theme }) => ({
+    width: '170px',
+    maeginRight: '6px',
+    textTransform: 'none',
+    color: theme.palette.primary.main,
+    borderRadius: '50px',
+    border: `1px solid ${theme.palette.grey['300']}`,
+}));
 
-const useClickOutside = (containerRef, callback) => {
-    const callbackRef = useRef();
+export const DeleteButton = styled(Button)(({ theme }) => ({
+    width: '170px',
+    marginLeft: '6px',
+    textTransform: 'none',
+    backgroundColor: theme.palette.error.dark,
+    color: theme.palette.background.paper,
+    borderRadius: '50px',
+    border: `1px solid ${theme.palette.grey['300']}`,
+}));
 
-    useEffect(() => {
-        callbackRef.current = callback;
-    }, [callback]);
 
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (
-                containerRef.current &&
-                !containerRef.current.contains(event.target)
-            ) {
-                callbackRef.current();
-            }
-        }
 
-        document.addEventListener("click", handleClickOutside);
 
-        return () => {
-            document.removeEventListener("click", handleClickOutside);
-        };
-    }, [containerRef]);
+
+interface CardProps {
+    task: Task;
 }
 
-export const Card = ({ task }) => {
-    const tasks = useContext(TaskContext);
 
-    const containerRef = useRef(null);
+export const Card = ({ task }: CardProps) => {
     const navigate = useNavigate();
+    const { tasks, setTasks }  = useTaskContext();
+    const containerRef = useRef(null);
     const [openOptions, setOpenOptions] = useState(false);
     const [open, setOpen] = useState(false);
 
 
-    const deleteTask = (e: MouseEvent) => {
+    const handleDeleteTask = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         const taskId = parseInt((e.target as HTMLElement).id);
-        const updatedTask = tasks.filter(item => item.id !== taskId);
-        sessionStorage.setItem("tasks", JSON.stringify(updatedTask));
-        setOpen(false);
-    }
+        const updatedTask = tasks.filter((item: Task) => item.id !== taskId);
 
-    const handleClickOpen = () => {
+        sessionStorage.setItem("tasks", JSON.stringify(updatedTask));
+        setTasks(updatedTask)
+        setOpen(false);
+    };
+
+    const handleOpenDialog = () => {
         setOpen(true);
     };
-    const onEdit = (e: MouseEvent) => {
-        navigate(`/edit/${(e.target as HTMLElement).id}`, { replace: true });
-    }
 
-    const handleClose = () => {
+    const redirectToEdit = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        navigate(`/edit/${(e.target as HTMLElement).id}`, { replace: true });
+    };
+
+    const handleCloseDialog = () => {
         setOpen(false);
     };
 
     const handleOpenOptions = () => {
         setOpenOptions(true)
-    }
-    const handleCloseOptions = () => {
+    };
+
+    const handleCloseDialogOptions = () => {
         setOpenOptions(false)
-    }
-    useClickOutside(containerRef, handleCloseOptions);
+    };
+
+    useClickOutside(containerRef, handleCloseDialogOptions);
+
     return (
         <>
 
@@ -108,7 +117,7 @@ export const Card = ({ task }) => {
                             paddingRight: '10px'
                         }}
                     >
-                        <Chip label="status"
+                        <Chip label={task.status}
                             sx={{
                                 marginRight: '10px'
                             }}
@@ -134,7 +143,7 @@ export const Card = ({ task }) => {
                             fontSize: '12px',
                             color: 'grey.600'
                         }}
-                    ><ClockSVG /> Created:{task.time}</Typography>
+                    ><ClockSVG /> Created:{task.created}</Typography>
                     <Typography
                         sx={{
                             paddingBottom: '16px',
@@ -145,7 +154,7 @@ export const Card = ({ task }) => {
                 </Box>
             </Paper>
             <BootstrapDialog
-                onClose={handleClose}
+                onClose={handleCloseDialog}
                 aria-labelledby="customized-dialog-title"
                 open={open}
             >
@@ -178,30 +187,8 @@ export const Card = ({ task }) => {
                             paddingTop: '40px'
                         }}
                     >
-                        <Button
-                            onClick={handleClose}
-                            sx={{
-                                width: '170px',
-                                maeginRight: '6px',
-                                textTransform: 'none',
-                                color: 'primary.main',
-                                borderRadius: '50px',
-                                border: '1px solid #D7D9DC',
-                            }}
-                        >Cancel</Button>
-                        <Button
-                            id={task.id}
-                            sx={{
-                                width: '170px',
-                                marginLeft: '6px',
-                                textTransform: 'none',
-                                backgroundColor: 'error.dark',
-                                color: 'background.paper',
-                                borderRadius: '50px',
-                                border: '1px solid #D7D9DC',
-                            }}
-                            onClick={deleteTask}
-                        >Delete</Button>
+                        <CancelButton onClick={handleCloseDialog}>Cancel</CancelButton>
+                        <DeleteButton id={String(task.id)} onClick={handleDeleteTask}>Delete</DeleteButton>
                     </Box>
                 </DialogContent>
                 <DialogActions>
@@ -227,12 +214,12 @@ export const Card = ({ task }) => {
                                 <CalendarSVG /> Task history
                             </Typography>
                             <Typography
-                                id={task.id}
+                                id={String(task.id)}
                                 sx={{
                                     paddingBottom: '10px',
                                     cursor: 'pointer'
                                 }}
-                                onClick={onEdit}
+                                onClick={redirectToEdit}
                             >
                                 <EditSVG /> Edit task
                             </Typography>
@@ -241,7 +228,7 @@ export const Card = ({ task }) => {
                                     color: 'error.dark',
                                     cursor: 'pointer'
                                 }}
-                                onClick={handleClickOpen}
+                                onClick={handleOpenDialog}
                             >
                                 <DeleteSVG /> Delete task
                             </Typography>

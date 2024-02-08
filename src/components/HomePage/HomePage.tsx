@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Box, Container, Stack, Breadcrumbs, Paper, Typography, TextField, Button, Link } from "@mui/material";
-import { styled } from '@mui/material/styles';
 import { AddSVG } from "../Icons/Add";
 import { FileSVG } from "../Icons/File";
 import { NoTaskSVG } from "../Icons/NoTask";
@@ -10,10 +9,10 @@ import { TaskContext } from "../../context/context";
 
 
 export enum TaskStatus {
-    TO_DO = 'ToDo',
-    IN_PROGRESS = 'InProgress',
+    TO_DO = 'Todo',
+    IN_PROGRESS = 'In progress',
     BLOCKED = 'Blocked',
-    IN_QA = 'InQa',
+    IN_QA = 'In QA',
     DONE = 'Done',
     DEPLOYED = 'Deployed'
 }
@@ -23,21 +22,20 @@ export interface Task {
     status: TaskStatus;
     title: string;
     description: string;
-    created: string;
+    created: any;
 }
-
 
 
 export default function HomePage() {
 
-    const [tasks, setTasks] = useState([]);
+    const [tasks, setTasks] = useState<Task[]>([])
     const [field, setField] = useState({
         title: "",
         description: ""
     });
 
 
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setField({
             ...field,
@@ -45,13 +43,15 @@ export default function HomePage() {
         });
     };
 
-
     useEffect(() => {
-        const storedTasks = JSON.parse(sessionStorage.getItem("tasks"));
-        if (storedTasks) {
+        const storedTasksString = sessionStorage.getItem("tasks");
+
+        if (storedTasksString) {
+            const storedTasks = JSON.parse(storedTasksString);
             setTasks(storedTasks);
         }
-    }, [tasks]);
+        
+    }, []);
 
     const handleAddTask = () => {
         if (!field.title || !field.description) {
@@ -62,16 +62,16 @@ export default function HomePage() {
         const newTask = {
             id: Date.now(),
             title: field.title,
+            status: TaskStatus.TO_DO,
+            created: Date.now(),
             description: field.description
         };
 
         const updatedTasks = [...tasks, newTask];
         setTasks(updatedTasks);
 
-        // Save tasks to session storage
         sessionStorage.setItem("tasks", JSON.stringify(updatedTasks));
 
-        // Clear input fields
         setField({
             title: "",
             description: ""
@@ -88,7 +88,7 @@ export default function HomePage() {
     ];
 
     return (
-        <TaskContext.Provider value={tasks}>
+        <TaskContext.Provider value={{ tasks, setTasks }}>
             <Box>
                 <Container maxWidth="sm">
                     <Stack
@@ -193,7 +193,7 @@ export default function HomePage() {
                             </Box>
                         </Paper>
                     ) : (
-                        tasks.map((task) => (
+                        tasks.map((task: Task) => (
                             <Card key={task.id} task={task}
                             />
                         ))
