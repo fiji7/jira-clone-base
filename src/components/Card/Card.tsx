@@ -1,4 +1,4 @@
-import { Paper, Typography, Box, Chip, DialogContent, DialogActions, Dialog, styled, Button } from "@mui/material"
+import { Paper, Typography, Box, Chip, DialogContent, DialogActions, Divider, useTheme } from "@mui/material"
 import { CalendarSVG } from "../Icons/Calendar"
 import { ClockSVG } from "../Icons/Clock"
 import { DeleteSVG } from "../Icons/Delete"
@@ -10,34 +10,9 @@ import { TrashSVG } from "../Icons/Trash"
 import { useTaskContext } from "../../context/context"
 import { useClickOutside } from "../../helperHooks/useClickOutside"
 import { Task } from "../../utils/interfaces/Task"
+import { getChipBackgroundColor } from "../../utils/getChipBackgroundColor"
+import { BootstrapDialog, CancelButton, DateTypography, DeleteButton, MainBox, OptionsPaper } from "./Card.styled"
 
-export const BootstrapDialog = styled(Dialog)(({ theme }) => ({
-    '& .MuiDialogContent-root': {
-        padding: theme.spacing(2),
-    },
-    '& .MuiDialogActions-root': {
-        padding: theme.spacing(1),
-    },
-}));
-
-export const CancelButton = styled(Button)(({ theme }) => ({
-    width: '170px',
-    maeginRight: '6px',
-    textTransform: 'none',
-    color: theme.palette.primary.main,
-    borderRadius: '50px',
-    border: `1px solid ${theme.palette.grey['300']}`,
-}));
-
-export const DeleteButton = styled(Button)(({ theme }) => ({
-    width: '170px',
-    marginLeft: '6px',
-    textTransform: 'none',
-    backgroundColor: theme.palette.error.dark,
-    color: theme.palette.background.paper,
-    borderRadius: '50px',
-    border: `1px solid ${theme.palette.grey['300']}`,
-}));
 
 interface CardProps {
     task: Task;
@@ -45,32 +20,42 @@ interface CardProps {
 
 
 export const Card = ({ task }: CardProps) => {
+    const theme = useTheme()
     const navigate = useNavigate();
-    const { tasks, setTasks }  = useTaskContext();
+    const { tasks, setTasks } = useTaskContext();
     const containerRef = useRef(null);
     const [openOptions, setOpenOptions] = useState(false);
-    const [open, setOpen] = useState(false);
+    const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [openHistoryDialog, setOpenHistoryDialog] = useState(false);
 
 
     const handleDeleteTask = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         const taskId = parseInt((e.target as HTMLElement).id);
         const updatedTask = tasks.filter((item: Task) => item.id !== taskId);
 
-        sessionStorage.setItem("tasks", JSON.stringify(updatedTask));
+        localStorage.setItem("tasks", JSON.stringify(updatedTask));
         setTasks(updatedTask)
-        setOpen(false);
+        setOpenDeleteDialog(false);
     };
 
-    const handleOpenDialog = () => {
-        setOpen(true);
+    const handleOpenDeleteDialog = () => {
+        setOpenDeleteDialog(true);
     };
 
     const redirectToEdit = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         navigate(`/edit/${(e.target as HTMLElement).id}`, { replace: true });
     };
 
-    const handleCloseDialog = () => {
-        setOpen(false);
+    const handleCloseDeleteDialog = () => {
+        setOpenDeleteDialog(false);
+    };
+
+    const handleCloseHistoryDialog = () => {
+        setOpenHistoryDialog(false);
+    };
+
+    const handleOpeneHistoryDialog = () => {
+        setOpenHistoryDialog(true);
     };
 
     const handleOpenOptions = () => {
@@ -83,9 +68,10 @@ export const Card = ({ task }: CardProps) => {
 
     useClickOutside(containerRef, handleCloseDialogOptions);
 
+
+
     return (
         <>
-
             <Paper elevation={3}
                 ref={containerRef}
                 key={task.id}
@@ -93,13 +79,7 @@ export const Card = ({ task }: CardProps) => {
                     marginTop: '20px'
                 }}
             >
-                <Box
-                    sx={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        paddingTop: '16px'
-                    }}
-                >
+                <MainBox>
                     <Typography
                         sx={{
                             fontWeight: 600,
@@ -115,7 +95,9 @@ export const Card = ({ task }: CardProps) => {
                     >
                         <Chip label={task.status}
                             sx={{
-                                marginRight: '10px'
+                                marginRight: '10px',
+                                backgroundColor: getChipBackgroundColor(task.status).main,
+                                color: getChipBackgroundColor(task.status).secondary
                             }}
                         />
                         <Box
@@ -128,7 +110,7 @@ export const Card = ({ task }: CardProps) => {
                             <DotsVerticalSVG />
                         </Box>
                     </Box>
-                </Box>
+                </MainBox>
                 <Box
                     sx={{
                         padding: '0 20px'
@@ -145,15 +127,15 @@ export const Card = ({ task }: CardProps) => {
                             paddingBottom: '16px',
                             fontSize: '14px',
                             color: 'grey.600'
-                        }}
-                    >{task.description}</Typography>
+                        }}>
+                        {task.description.length > 50 ? `${task.description.slice(0, 50)}...` : task.description}
+                    </Typography>
                 </Box>
             </Paper>
             <BootstrapDialog
-                onClose={handleCloseDialog}
+                onClose={handleCloseDeleteDialog}
                 aria-labelledby="customized-dialog-title"
-                open={open}
-            >
+                open={openDeleteDialog} theme={theme}>
                 <DialogContent
                     sx={{
                         textAlign: 'center',
@@ -183,9 +165,49 @@ export const Card = ({ task }: CardProps) => {
                             paddingTop: '40px'
                         }}
                     >
-                        <CancelButton onClick={handleCloseDialog}>Cancel</CancelButton>
-                        <DeleteButton id={String(task.id)} onClick={handleDeleteTask}>Delete</DeleteButton>
+                        <CancelButton onClick={handleCloseDeleteDialog} theme={theme}>Cancel</CancelButton>
+                        <DeleteButton id={String(task.id)} onClick={handleDeleteTask} theme={theme}>Delete</DeleteButton>
                     </Box>
+                </DialogContent>
+                <DialogActions>
+                </DialogActions>
+            </BootstrapDialog>
+            <BootstrapDialog
+                onClose={handleCloseHistoryDialog}
+                aria-labelledby="customized-dialog-title"
+                open={openHistoryDialog} theme={theme}>
+                <DialogContent
+                    sx={{
+                        height: '60vh',
+                        width: '40vh',
+                    }}
+                >
+                    <Box>
+                        <Typography
+                            sx={{
+                                padding: '32px',
+                                fontSize: '24px',
+                                fontWeight: 600
+                            }}
+                        >Task history</Typography>
+                        {task.history.map((el, index) => {
+                            return (
+                                <Box key={`history_${el.title}_${index}`}>
+                                    <Typography
+                                        sx={{
+                                            fontWeight: 600,
+                                            paddingTop: '20px',
+                                            paddingLeft: '40px'
+                                        }}
+                                    >{`The task was marked as "${el.title}"`}
+                                    </Typography>
+                                    <DateTypography theme={theme}><ClockSVG /> {el.created}</DateTypography>
+                                    <Divider />
+                                </Box>
+                            )
+                        })}
+                    </Box>
+
                 </DialogContent>
                 <DialogActions>
                 </DialogActions>
@@ -193,42 +215,42 @@ export const Card = ({ task }: CardProps) => {
             {
                 openOptions && (
                     <Box style={{ position: 'relative' }}>
-                        <Paper elevation={3}
-                            sx={{
-                                width: '200px',
-                                position: 'absolute',
-                                top: '-50px',
-                                right: 0
-                            }}
-                        >
-                            <Typography
+                        <OptionsPaper elevation={3}>
+                            <Box
                                 sx={{
-                                    paddingBottom: '10px',
-                                    cursor: 'pointer'
+                                    padding: '16px'
                                 }}
                             >
-                                <CalendarSVG /> Task history
-                            </Typography>
-                            <Typography
-                                id={String(task.id)}
-                                sx={{
-                                    paddingBottom: '10px',
-                                    cursor: 'pointer'
-                                }}
-                                onClick={redirectToEdit}
-                            >
-                                <EditSVG /> Edit task
-                            </Typography>
-                            <Typography
-                                sx={{
-                                    color: 'error.dark',
-                                    cursor: 'pointer'
-                                }}
-                                onClick={handleOpenDialog}
-                            >
-                                <DeleteSVG /> Delete task
-                            </Typography>
-                        </Paper>
+                                <Typography
+                                    sx={{
+                                        paddingBottom: '16px',
+                                        cursor: 'pointer'
+                                    }}
+                                    onClick={handleOpeneHistoryDialog}
+                                >
+                                    <CalendarSVG /> Task history
+                                </Typography>
+                                <Typography
+                                    id={String(task.id)}
+                                    sx={{
+                                        paddingBottom: '16px',
+                                        cursor: 'pointer'
+                                    }}
+                                    onClick={redirectToEdit}
+                                >
+                                    <EditSVG /> Edit task
+                                </Typography>
+                                <Typography
+                                    sx={{
+                                        color: 'error.dark',
+                                        cursor: 'pointer'
+                                    }}
+                                    onClick={handleOpenDeleteDialog}
+                                >
+                                    <DeleteSVG /> Delete task
+                                </Typography>
+                            </Box>
+                        </OptionsPaper>
                     </Box>
                 )
             }

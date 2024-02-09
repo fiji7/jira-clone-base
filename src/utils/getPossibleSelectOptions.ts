@@ -1,8 +1,8 @@
 import { TaskStatus } from "./enums/TaskEnum";
 
 
-export const getPossibleSelectOptions = (param: TaskStatus): TaskStatus[] => {
-    switch (param) {
+export const getPossibleSelectOptions = (taskStatus: TaskStatus): TaskStatus[] => {
+    switch (taskStatus) {
         case TaskStatus.TO_DO:
             return [TaskStatus.IN_PROGRESS, TaskStatus.TO_DO]
         case TaskStatus.IN_PROGRESS:

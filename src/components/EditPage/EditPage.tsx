@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Box, Container, Stack, Breadcrumbs, Paper, Typography, TextField, Button, Link, ThemeProvider, FormControl, MenuItem, Select, OutlinedInput, SelectChangeEvent } from "@mui/material"
+import { Box, Container, Stack, Breadcrumbs, Paper, Typography, TextField, Link, ThemeProvider, FormControl, MenuItem, Select, OutlinedInput, SelectChangeEvent, Snackbar, Alert } from "@mui/material"
+import { format } from "date-fns";
 import { ChevronRightSVG } from "../Icons/ChevronRight"
 import { CheckMarkSVG } from "../Icons/CheckMark"
 import { EditSVG } from "../Icons/Edit"
@@ -8,6 +9,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { TaskStatus } from "../../utils/enums/TaskEnum";
 import { getPossibleSelectOptions } from "../../utils/getPossibleSelectOptions";
 import { Task } from "../../utils/interfaces/Task";
+import { SaveButton, CancelButton } from "./EditPage.styled";
+
 
 export default function EditPage() {
     const { id } = useParams<{ id: string }>();
@@ -17,6 +20,16 @@ export default function EditPage() {
     const [selectValue, setSelectValue] = useState('');
     const [titleValue, setTitleValue] = useState('');
     const [descriptionValue, setDescriptionValue] = useState('');
+    const [openAlert, setOpenAlert] = useState(false);
+
+
+    const handleCloseAlert = (_event?: React.SyntheticEvent | Event, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setOpenAlert(false);
+    };
 
     const handleSelectChange = (event: SelectChangeEvent<string>) => {
         setSelectValue(event.target.value);
@@ -40,25 +53,36 @@ export default function EditPage() {
         }
 
         if (selectValue !== task.status) {
+
+            const newHistory = [...task.history];
+            if (newHistory.length === 3) {
+                newHistory.shift();
+            }
+            newHistory.push({
+                title: selectValue,
+                created: format(Date.now(), "MMM d, yyyy - h:mm a"),
+            });
+            updatedTask.history = newHistory;
             updatedTask.status = selectValue as TaskStatus;
             hasChanges = true;
         }
 
         if (!hasChanges) {
-            alert("Title and Description are required!");
+            setOpenAlert(true)
+            return;
         }
 
         const updatedTasks = tasks.map(t => (t.id === updatedTask.id ? updatedTask : t));
         setTasks(updatedTasks);
 
-        sessionStorage.setItem('tasks', JSON.stringify(updatedTasks));
+        localStorage.setItem('tasks', JSON.stringify(updatedTasks));
 
 
         navigate(`/`, { replace: true });
     };
 
     useEffect(() => {
-        const storedTasksString = sessionStorage.getItem("tasks");
+        const storedTasksString = localStorage.getItem("tasks");
 
         if (storedTasksString) {
             const storedTasks = JSON.parse(storedTasksString) as Task[];
@@ -130,60 +154,54 @@ export default function EditPage() {
                             />
                         </Box>
                         <FormControl fullWidth>
-                            <Select
-                                input={<OutlinedInput />}
-                                sx={{
-                                    width: '94%',
-                                    margin: '20px auto',
-                                    borderRadius: '50px'
-                                }}
-                                labelId="demo-simple-select-label"
-                                id="demo-simple-select"
-                                value={selectValue}
-                                onChange={handleSelectChange}
-                                label="Status"
-                            >
-                                {task && getPossibleSelectOptions(task.status).map((el, index) => (
-                                    <MenuItem key={`${el}_${index}`} value={el}>{el}</MenuItem>
-                                ))}
-                            </Select>
+                            {
+                                task && getPossibleSelectOptions(task.status).length !== 0 && (
+                                    <Select
+                                        input={<OutlinedInput />}
+                                        sx={{
+                                            width: '94%',
+                                            margin: '20px auto',
+                                            borderRadius: '50px'
+                                        }}
+                                        labelId="demo-simple-select-label"
+                                        id="demo-simple-select"
+                                        value={selectValue}
+                                        onChange={handleSelectChange}
+                                        label="Status"
+                                    >
+                                        {getPossibleSelectOptions(task.status).map((el, index) => (
+                                            <MenuItem key={`${el}_${index}`} value={el}>{el}</MenuItem>
+                                        ))}
+                                    </Select>
+                                )
+                            }
+
                         </FormControl>
                         <Box sx={{ padding: '0 20px', height: '120px', textAlign: 'center' }}>
-                            <Button
-                                sx={{
-                                    width: '220px',
-                                    margin: '0 10px',
-                                    borderRadius: '50px',
-                                    marginTop: '20px',
-                                    textTransform: 'none'
-                                }}
+                            <SaveButton
                                 variant="contained"
-                                onClick={handleSaveChanges}
-                            >
+                                onClick={handleSaveChanges} theme={theme}>
                                 <CheckMarkSVG />Save changes
-                            </Button>
-                            <Button
-                                sx={{
-                                    width: '220px',
-                                    margin: '0 10px',
-                                    borderRadius: '50px',
-                                    marginTop: '20px',
-                                    textTransform: 'none',
-                                    backgroundColor: 'background.paper',
-                                    color: 'primary.main',
-                                    '&:hover': {
-                                        backgroundColor: 'background.paper',
-                                    }
-                                }}
+                            </SaveButton>
+                            <CancelButton
                                 variant="contained"
-                                onClick={() => navigate(`/`, { replace: true })}
-                            >
+                                onClick={() => navigate(`/`, { replace: true })} theme={theme}>
                                 Cancel
-                            </Button>
+                            </CancelButton>
                         </Box>
                     </Paper>
                 </Container>
             </Box>
+            <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
+                <Alert
+                    onClose={handleCloseAlert}
+                    severity="warning"
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    Please provide a change at least in one field
+                </Alert>
+            </Snackbar>
         </ThemeProvider>
     )
 }

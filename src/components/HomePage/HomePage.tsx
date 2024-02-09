@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Box, Container, Stack, Breadcrumbs, Paper, Typography, TextField, Button, Link } from "@mui/material";
+import { Box, Container, Stack, Breadcrumbs, Paper, Typography, TextField, Link, Alert, Snackbar } from "@mui/material";
+import { format } from 'date-fns';
 import { AddSVG } from "../Icons/Add";
 import { FileSVG } from "../Icons/File";
 import { NoTaskSVG } from "../Icons/NoTask";
@@ -8,9 +9,20 @@ import { Card } from "../Card/Card";
 import { TaskContext } from "../../context/context";
 import { TaskStatus } from "../../utils/enums/TaskEnum";
 import { Task } from "../../utils/interfaces/Task";
+import { AddButton, SkeletonBox } from "./HomePage.styled";
 
 
 export default function HomePage() {
+    const [openAlert, setOpenAlert] = useState(false);
+
+
+    const handleCloseAlert = (_event?: React.SyntheticEvent | Event, reason?: string) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+
+        setOpenAlert(false);
+    };
 
     const [tasks, setTasks] = useState<Task[]>([])
     const [field, setField] = useState({
@@ -28,18 +40,18 @@ export default function HomePage() {
     };
 
     useEffect(() => {
-        const storedTasksString = sessionStorage.getItem("tasks");
+        const storedTasksString = localStorage.getItem("tasks");
 
         if (storedTasksString) {
             const storedTasks = JSON.parse(storedTasksString);
             setTasks(storedTasks);
         }
-        
+
     }, []);
 
     const handleAddTask = () => {
         if (!field.title || !field.description) {
-            alert("Title and Description are required!");
+            setOpenAlert(true);
             return;
         }
 
@@ -47,14 +59,15 @@ export default function HomePage() {
             id: Date.now(),
             title: field.title,
             status: TaskStatus.TO_DO,
-            created: Date.now().toString(),
-            description: field.description
+            created: format(Date.now(), "MMM d, yyyy - h:mm a"),
+            description: field.description,
+            history: [{ title: TaskStatus.TO_DO, created: format(Date.now(), "MMM d, yyyy - h:mm a") }]
         };
 
         const updatedTasks = [...tasks, newTask];
         setTasks(updatedTasks);
 
-        sessionStorage.setItem("tasks", JSON.stringify(updatedTasks));
+        localStorage.setItem("tasks", JSON.stringify(updatedTasks));
 
         setField({
             title: "",
@@ -130,19 +143,13 @@ export default function HomePage() {
                             />
                         </Box>
                         <Box sx={{ padding: "0 20px", height: "80px" }}>
-                            <Button
+                            <AddButton
                                 onClick={handleAddTask}
-                                sx={{
-                                    float: "right",
-                                    borderRadius: "50px",
-                                    marginTop: "20px",
-                                    textTransform: "none"
-                                }}
                                 variant="contained"
                             >
                                 <AddSVG />
                                 Add
-                            </Button>
+                            </AddButton>
                         </Box>
                     </Paper>
                     <Typography
@@ -156,13 +163,7 @@ export default function HomePage() {
                     </Typography>
                     {tasks.length === 0 ? (
                         <Paper elevation={3}>
-                            <Box
-                                sx={{
-                                    width: "max-content",
-                                    margin: "0 auto",
-                                    padding: "20px 0",
-                                    textAlign: "center"
-                                }}
+                            <SkeletonBox
                             >
 
                                 <>
@@ -174,7 +175,7 @@ export default function HomePage() {
                                     </Typography>
                                 </>
 
-                            </Box>
+                            </SkeletonBox>
                         </Paper>
                     ) : (
                         tasks.map((task: Task) => (
@@ -184,6 +185,16 @@ export default function HomePage() {
                     )}
                 </Container>
             </Box>
+            <Snackbar open={openAlert} autoHideDuration={6000} onClose={handleCloseAlert}>
+                <Alert
+                    onClose={handleCloseAlert}
+                    severity="warning"
+                    variant="filled"
+                    sx={{ width: '100%' }}
+                >
+                    Please fill out the fields
+                </Alert>
+            </Snackbar>
         </TaskContext.Provider >
     );
 }
