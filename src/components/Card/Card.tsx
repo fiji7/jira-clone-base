@@ -8,8 +8,8 @@ import { useState, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { TrashSVG } from "../Icons/Trash"
 import { useTaskContext } from "../../context/context"
-import { Task } from "../HomePage/HomePage"
 import { useClickOutside } from "../../helperHooks/useClickOutside"
+import { Task } from "../../utils/interfaces/Task"
 
 export const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialogContent-root': {
@@ -38,10 +38,6 @@ export const DeleteButton = styled(Button)(({ theme }) => ({
     borderRadius: '50px',
     border: `1px solid ${theme.palette.grey['300']}`,
 }));
-
-
-
-
 
 interface CardProps {
     task: Task;

@@ -1,5 +1,6 @@
 import { Dispatch, SetStateAction, createContext, useContext } from "react";
-import { Task } from "../components/HomePage/HomePage";
+import { Task } from "../utils/interfaces/Task";
+
 
 interface TaskContextType {
     tasks: Task[];

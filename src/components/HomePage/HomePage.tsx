@@ -6,24 +6,8 @@ import { NoTaskSVG } from "../Icons/NoTask";
 import { ChevronRightSVG } from "../Icons/ChevronRight";
 import { Card } from "../Card/Card";
 import { TaskContext } from "../../context/context";
-
-
-export enum TaskStatus {
-    TO_DO = 'Todo',
-    IN_PROGRESS = 'In progress',
-    BLOCKED = 'Blocked',
-    IN_QA = 'In QA',
-    DONE = 'Done',
-    DEPLOYED = 'Deployed'
-}
-
-export interface Task {
-    id: number;
-    status: TaskStatus;
-    title: string;
-    description: string;
-    created: any;
-}
+import { TaskStatus } from "../../utils/enums/TaskEnum";
+import { Task } from "../../utils/interfaces/Task";
 
 
 export default function HomePage() {
@@ -63,7 +47,7 @@ export default function HomePage() {
             id: Date.now(),
             title: field.title,
             status: TaskStatus.TO_DO,
-            created: Date.now(),
+            created: Date.now().toString(),
             description: field.description
         };
 
